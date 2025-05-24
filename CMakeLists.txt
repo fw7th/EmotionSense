@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
 
 # Add sub_dirs
-add_subdirectory(lib/frame_reader)
-add_subdirectory(lib/preprocessor)
+add_subdirectory(lib/frameReader)
+add_subdirectory(lib/detection)
 
 add_executable(EmotionSense main.cpp)
-target_link_libraries(EmotionSense PRIVATE reader_lib preprocess_lib)
+target_link_libraries(EmotionSense PRIVATE readerLib UltraFace)

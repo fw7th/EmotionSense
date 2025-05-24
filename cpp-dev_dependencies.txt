@@ -1,2 +1,7 @@
 Eigen
 OpenCV
+
+Add to list:
+RUN apt-get update && apt-get install -y \
+    at-spi2-core \
+    libatk-bridge2.0-0
