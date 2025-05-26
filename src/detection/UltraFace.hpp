@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "frameReader.hpp"
 #include "gpu.h"
 #include "net.h"
 #include <algorithm>
@@ -39,7 +40,7 @@ typedef struct FaceInfo {
 class UltraFace
 {
   public:
-    UltraFace(Reader &obj, const std::string &bin_path,
+    UltraFace(read::Reader &obj, const std::string &bin_path,
               const std::string &param_path, int input_width, int input_length,
               int num_thread_ = 4, float score_threshold_ = 0.7,
               float iou_threshold_ = 0.3, int topk_ = -1);
@@ -48,6 +49,8 @@ class UltraFace
 
     int detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list);
 
+    void infer();
+
   private:
     void generateBBox(std::vector<FaceInfo> &bbox_collection, ncnn::Mat scores,
                       ncnn::Mat boxes, float score_threshold, int num_anchors);
@@ -55,10 +58,8 @@ class UltraFace
     void nms(std::vector<FaceInfo> &input, std::vector<FaceInfo> &output,
              int type = blending_nms);
 
-    void infer();
-
   private:
-    Reader &shared_obj;
+    read::Reader shared_obj;
     ncnn::Net ultraface;
 
     int num_thread;
@@ -90,6 +91,8 @@ class UltraFace
 
     std::vector<std::vector<float>> priors = {};
     std::queue<cv::Mat> ultraface_queue; // queue to recieve detections
+    std::string param_path_;
+    std::string bin_path_;
 };
 
 #endif /* UltraFace_hpp */

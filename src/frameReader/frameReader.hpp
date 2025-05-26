@@ -9,10 +9,11 @@ namespace read {
 class Reader {
 private:
   std::variant<int, std::string> source;
-  std::queue<cv::Mat> reader_queue;
 
 public:
-  // Configuration method void setSource(std::variant<int, std::string> s);
+  // Configuration method
+  void setSource(std::variant<int, std::string> s);
+  std::queue<cv::Mat> reader_queue;
 
   void read_frames();
 };

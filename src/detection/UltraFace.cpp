@@ -11,12 +11,14 @@
 #include "UltraFace.hpp"
 #include "mat.h"
 
-UltraFace::UltraFace(Reader &obj, const std::string &bin_path,
+UltraFace::UltraFace(read::Reader &obj, const std::string &bin_path,
                      const std::string &param_path, int input_width,
                      int input_length, int num_thread_, float score_threshold_,
                      float iou_threshold_, int topk_)
 {
-    shared_obj(obj);
+    shared_obj = obj;
+    bin_path_ = bin_path;
+    param_path_ = param_path;
     num_thread = num_thread_;
     topk = topk_;
     score_threshold = score_threshold_;
@@ -64,9 +66,9 @@ UltraFace::UltraFace(Reader &obj, const std::string &bin_path,
 
 UltraFace::~UltraFace() { ultraface.clear(); }
 
-void infer()
+void UltraFace::infer()
 {
-    auto frame_queue_ref = shared_obj.frame_queue;
+    auto frame_queue_ref = shared_obj.reader_queue;
 
     while (!frame_queue_ref.empty()) {
         cv::Mat frame = frame_queue_ref.front();

@@ -5,7 +5,7 @@
 #include <thread>
 #include <variant>
 
-#include "Ultraface.hpp"
+#include "UltraFace.hpp"
 #include "frameReader.hpp"
 
 int main() {
@@ -37,7 +37,7 @@ int main() {
     source = input;
   }
 
-  Reader shared_obj1;
+  read::Reader shared_obj1;
   shared_obj1.setSource(source);
 
   UltraFace ultraface(shared_obj1, bin_path, param_path, 320, 240, 1,

@@ -1,6 +1,5 @@
 #include "frameReader.hpp"
 #include <iostream>
-#include <opencv2/opencv.hpp>
 #include <utility>
 
 namespace read {
@@ -30,15 +29,13 @@ void Reader::read_frames() {
 
   while (true) {
     cv::Mat capture;
-    int width = 320;
-    int height = 240;
+    cap >> capture;
 
-    cap.read(&capture);
-    if (&capture.empty())
+    if (capture.empty())
       break;
 
     try {
-      &reader_queue.push(&capture);
+      reader_queue.push(std::move(capture));
     } catch (...) {
       std::cerr << "Error: Exception caught.\n";
       break;

@@ -2,7 +2,7 @@
 
 # Define your workspace container
 CONTAINER_NAME=cpp-env
-IMAGE_NAME=cpp-dev:gui
+IMAGE_NAME=cpp-dev:git
 MOUNT_PATH=$(pwd)
 
 # Allow local Docker containers to access the host X server
