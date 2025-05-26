@@ -1,0 +1,1 @@
+/usr/bin/g++ -std=c++11 -std=c++11  -O3 -DNDEBUG CMakeFiles/mxnet2ncnn.dir/mxnet2ncnn.cpp.o -o mxnet2ncnn 
