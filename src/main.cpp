@@ -10,8 +10,8 @@
 
 int main() {
   std::string input;
-  std::string bin_path = "./data/version-slim/slim_320.bin";
-  std::string param_path = "./data/version-slim/slim_320.param";
+  std::string bin_path = "../data/version-slim/slim_320.bin";
+  std::string param_path = "../data/version-slim/slim_320.param";
   std::cout << "Enter input source: ";
   std::cin >> input;
 

@@ -27,15 +27,19 @@ void Reader::read_frames() {
     return;
   }
 
-  while (true) {
+  while (cap.isOpened()) {
     cv::Mat capture;
     cap >> capture;
 
     if (capture.empty())
       break;
 
+    cv::Mat new_cap;
+    cv::resize(capture, new_cap, cv::Size(320, 240));
+
     try {
-      reader_queue.push(std::move(capture));
+      reader_queue.push(std::move(new_cap));
+      std::cout << "Frame passed to queue " << capture.size << "\n";
     } catch (...) {
       std::cerr << "Error: Exception caught.\n";
       break;

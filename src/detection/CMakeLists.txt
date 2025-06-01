@@ -9,18 +9,21 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (default Debug)" FORCE)
 endif()
 
-add_subdirectory(3rdparty/ncnn ncnn_build)
-
+find_package(OpenCV REQUIRED)
+find_package(OpenMP)
 add_library(UltraFace UltraFace.cpp)
 
 target_include_directories(UltraFace 
      PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/install/include/ncnn ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${OpenCV_INCLUDE_DIRS}
 )
-
-find_package(OpenCV REQUIRED)
 
 target_link_libraries(
     UltraFace 
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/src/libncnn.a 
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/install/lib/libncnn.a 
     PUBLIC ${OpenCV_LIBS} readerLib)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(UltraFace PUBLIC OpenMP::OpenMP_CXX)
+endif()

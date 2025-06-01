@@ -59,7 +59,7 @@ class UltraFace
              int type = blending_nms);
 
   private:
-    read::Reader shared_obj;
+    read::Reader &shared_obj;
     ncnn::Net ultraface;
 
     int num_thread;
@@ -91,8 +91,6 @@ class UltraFace
 
     std::vector<std::vector<float>> priors = {};
     std::queue<cv::Mat> ultraface_queue; // queue to recieve detections
-    std::string param_path_;
-    std::string bin_path_;
 };
 
 #endif /* UltraFace_hpp */
