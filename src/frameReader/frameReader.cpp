@@ -39,7 +39,7 @@ void Reader::read_frames() {
 
     try {
       reader_queue.push(std::move(new_cap));
-      std::cout << "Frame passed to queue " << capture.size << "\n";
+      std::cout << "Frame passed to queue " << new_cap.size << "\n";
     } catch (...) {
       std::cerr << "Error: Exception caught.\n";
       break;

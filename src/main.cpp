@@ -1,17 +1,17 @@
 #include <fstream>
 #include <iostream>
-#include <queue>
 #include <string>
 #include <thread>
 #include <variant>
 
 #include "UltraFace.hpp"
 #include "frameReader.hpp"
+#include "tracker.h"
 
 int main() {
   std::string input;
-  std::string bin_path = "../data/version-slim/slim_320.bin";
-  std::string param_path = "../data/version-slim/slim_320.param";
+  std::string bin_path = "../data/version-RFB/RFB-320.bin";
+  std::string param_path = "../data/version-RFB/RFB-320.param";
   std::cout << "Enter input source: ";
   std::cin >> input;
 
@@ -43,10 +43,14 @@ int main() {
   UltraFace ultraface(shared_obj1, bin_path, param_path, 320, 240, 1,
                       0.7); // config model input
 
+  Tracker tracks(&ultraface);
+
   std::thread t1([&]() { shared_obj1.read_frames(); });
   std::thread t2([&]() { ultraface.infer(); });
+  std::thread t3([&]() { tracks.track(); });
 
   t1.join();
   t2.join();
+  t3.join();
   return 0;
 }

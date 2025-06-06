@@ -14,14 +14,14 @@ find_package(OpenMP)
 add_library(UltraFace UltraFace.cpp)
 
 target_include_directories(UltraFace 
-     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/install/include/ncnn ${CMAKE_CURRENT_SOURCE_DIR}
+     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/install/include/ncnn ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${OpenCV_INCLUDE_DIRS}
 )
 
 target_link_libraries(
     UltraFace 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/src/libncnn.a 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ncnn_build/install/lib/libncnn.a 
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/src/libncnn.a 
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/install/lib/libncnn.a 
     PUBLIC ${OpenCV_LIBS} readerLib)
 
 if(OpenMP_CXX_FOUND)

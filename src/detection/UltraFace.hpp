@@ -15,6 +15,7 @@
 #include "gpu.h"
 #include "net.h"
 #include <algorithm>
+#include <deque>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <queue>
@@ -37,6 +38,12 @@ typedef struct FaceInfo {
     float *landmarks;
 } FaceInfo;
 
+typedef struct UltraStruct {
+    cv::Mat frame;
+    cv::Mat crop;
+
+} UltraStruct;
+
 class UltraFace
 {
   public:
@@ -49,8 +56,12 @@ class UltraFace
 
     int detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list);
 
+    cv::Mat roiCrop(float x1, float y1, cv::Mat frame);
+
     void infer();
 
+    std::queue<std::vector<UltraStruct>>
+        ultraface_queue; // queue to recieve detections
   private:
     void generateBBox(std::vector<FaceInfo> &bbox_collection, ncnn::Mat scores,
                       ncnn::Mat boxes, float score_threshold, int num_anchors);
@@ -90,7 +101,6 @@ class UltraFace
     std::vector<int> w_h_list;
 
     std::vector<std::vector<float>> priors = {};
-    std::queue<cv::Mat> ultraface_queue; // queue to recieve detections
 };
 
 #endif /* UltraFace_hpp */

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef TRACKER_H
+#define TRACKER_H
+
 #include <opencv2/opencv.hpp>
 #include <queue>
 #include <string>
@@ -19,3 +22,5 @@ public:
 };
 
 } // namespace read
+
+#endif
