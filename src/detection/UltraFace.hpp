@@ -13,6 +13,7 @@
 
 #include "frameReader.hpp"
 #include "gpu.h"
+#include "memory"
 #include "net.h"
 #include <algorithm>
 #include <deque>
@@ -40,7 +41,7 @@ typedef struct FaceInfo {
 
 typedef struct UltraStruct {
     cv::Mat frame;
-    cv::Mat crop;
+    std::vector<cv::Mat> crops;
 
 } UltraStruct;
 
@@ -52,15 +53,17 @@ class UltraFace
               int num_thread_ = 4, float score_threshold_ = 0.7,
               float iou_threshold_ = 0.3, int topk_ = -1);
 
+    UltraFace(const UltraFace &) = delete;            // Delete copy constructor
+    UltraFace &operator=(const UltraFace &) = delete; // Delete copy assignment
     ~UltraFace();
 
     int detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list);
 
-    cv::Mat roiCrop(float x1, float y1, cv::Mat frame);
+    cv::Mat roiCrop(float x1, float y1, float x2, float y2, cv::Mat &frame);
 
     void infer();
 
-    std::queue<std::vector<UltraStruct>>
+    std::queue<std::unique_ptr<std::vector<UltraStruct>>>
         ultraface_queue; // queue to recieve detections
   private:
     void generateBBox(std::vector<FaceInfo> &bbox_collection, ncnn::Mat scores,

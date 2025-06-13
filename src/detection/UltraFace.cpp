@@ -10,7 +10,9 @@
 
 #include "UltraFace.hpp"
 #include "mat.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 #include <utility>
 
 UltraFace::UltraFace(read::Reader &obj, const std::string &bin_path,
@@ -68,69 +70,121 @@ UltraFace::~UltraFace() { ultraface.clear(); }
 
 void UltraFace::infer()
 {
-    std::cout << "function started\n";
     auto &frame_queue_ref = shared_obj.reader_queue;
 
-    while (!frame_queue_ref.empty()) {
-        std::cout << "accessed queue\n";
-        cv::Mat frame = frame_queue_ref.front();
-        cv::Mat frame_copy = frame.clone();
-        cv::Mat crop;
-        frame_queue_ref.pop();
+    int print_count = 0;
+    while (true) {
+        if (!frame_queue_ref.empty()) {
+            cv::Mat frame = frame_queue_ref.front();
+            cv::Mat frame_copy = frame.clone();
+            cv::Mat crop;
+            frame_queue_ref.pop();
 
-        std::cout << "gotten frame\n";
-        if (frame.channels() != 3) {
-            std::cerr << "Unexpected number of channels: " << frame.channels()
-                      << "\n";
-            continue;
-        }
+            if (print_count % 10 == 0)
+                std::cout << "Frame queue accessed.\n";
 
-        if (!frame.empty()) {
-            ncnn::Mat inmat = ncnn::Mat::from_pixels(
-                frame.data, ncnn::Mat::PIXEL_BGR2RGB, frame.cols, frame.rows);
+            int height = frame.rows;
 
-            std::vector<FaceInfo> face_info;
-            std::vector<UltraStruct> ultra_struct;
-            detect(inmat, face_info);
+            if (print_count % 10 == 0)
+                std::cout << "Frame from reader: " << height << "\n";
 
-            std::cout << "Just before the loop\n";
-            for (int i = 0; i < face_info.size(); i++) {
-                std::cout << "reached here\n";
-                auto face = face_info[i];
-                cv::Point pt1(face.x1, face.y1);
-                cv::Point pt2(face.x2, face.y2);
-                cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 1);
-
-                auto ultra = ultra_struct[i];
-                ultra.frame = frame;
-                ultra.crop = roiCrop(face.x1, face.y1, frame_copy);
+            if (frame.channels() != 3) {
+                std::cerr << "Unexpected number of channels: "
+                          << frame.channels() << "\n";
+                continue;
             }
 
-            ultraface_queue.push(std::move(ultra_struct));
+            if (!frame.empty()) {
+                if (print_count % 10 == 0)
+                    std::cout << "gotten frame\n";
+
+                ncnn::Mat inmat =
+                    ncnn::Mat::from_pixels(frame.data, ncnn::Mat::PIXEL_BGR2RGB,
+                                           frame.cols, frame.rows);
+
+                std::vector<FaceInfo> face_info;
+                std::vector<UltraStruct> ultra_vec;
+                std::unique_ptr<std::vector<UltraStruct>> obj_ptr =
+                    std::make_unique<std::vector<UltraStruct>>();
+
+                std::vector<cv::Mat> crops;
+
+                detect(inmat, face_info);
+
+                if (face_info.empty()) {
+                    std::cout << "No faces detected\n";
+                    continue;
+                }
+
+                std::cout << "Just before the loop" << std::endl;
+                for (int i = 0; i < face_info.size(); i++) {
+                    if (print_count % 10 == 0)
+                        std::cout << "reached here\n";
+
+                    auto face = face_info[i];
+                    cv::Point pt1(face.x1, face.y1);
+                    cv::Point pt2(face.x2, face.y2);
+
+                    std::cout << "x1 = " << face.x1 << " x2 = " << face.x2
+                              << "\n";
+                    std::cout << "y1 = " << face.y1 << " y2 = " << face.y2
+                              << "\n";
+
+                    crop =
+                        roiCrop(face.x1, face.y1, face.x2, face.y2, frame_copy);
+
+                    crops.emplace_back(crop);
+                    cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 1);
+
+                    int height = frame.rows;
+                    if (print_count % 10 == 0)
+                        std::cout << "Detected_Frame: " << height << "\n";
+                    std::cout << "Loop about to end\n";
+                }
+
+                UltraStruct ultra;
+                ultra.frame = frame;
+                ultra.crops = crops;
+
+                obj_ptr->emplace_back(ultra);
+
+                ultraface_queue.push(std::move(obj_ptr));
+
+            } else {
+                std::cout << "Frame is empty. \n";
+            }
+
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            if (print_count % 15 == 0)
+                std::cout << "frame queue empty\n";
         }
+
+        print_count++;
     }
 }
 
-cv::Mat UltraFace::roiCrop(float x1, float y1, cv::Mat frame)
+cv::Mat UltraFace::roiCrop(float x1, float y1, float x2, float y2,
+                           cv::Mat &frame)
 {
-    float act_x1 = x1 - 24;
-    float width = act_x1 + 48;
-    float act_y1 = y1 - 24;
-    float height = act_y1 + 48;
-
-    cv::Rect roi(act_x1, act_y1, width, height);
+    float width = (x2 - x1) + 35;
+    float height = (y2 - y1) + 35;
+    cv::Rect roi(x1 - 20, y1 - 20, width, height);
     cv::Mat cropped = frame(roi);
 
     std::cout << "Cropped size: " << cropped.cols << "x" << cropped.rows
               << std::endl;
     std::cout << "Cropped empty? " << cropped.empty() << std::endl;
 
-    if (!cropped.empty()) {
-        cv::imshow("crop", cropped);
-    } else {
+    if (cropped.empty()) {
+
         std::cout << "Cropped image is empty!" << std::endl;
     }
-    return cropped;
+    cv::Mat resize_cropped;
+    cv::Size newSize(48, 48);
+
+    cv::resize(cropped, resize_cropped, newSize, 0, 0, cv::INTER_LINEAR);
+    return resize_cropped;
 }
 
 int UltraFace::detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list)

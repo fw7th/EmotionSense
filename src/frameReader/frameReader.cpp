@@ -26,7 +26,7 @@ void Reader::read_frames() {
     std::cerr << "Source could not be read. \n";
     return;
   }
-
+  int i = 0;
   while (cap.isOpened()) {
     cv::Mat capture;
     cap >> capture;
@@ -37,15 +37,18 @@ void Reader::read_frames() {
     cv::Mat new_cap;
     cv::resize(capture, new_cap, cv::Size(320, 240));
 
+    i++;
     try {
       reader_queue.push(std::move(new_cap));
-      std::cout << "Frame passed to queue " << new_cap.size << "\n";
+      if (i % 8 == 0) {
+        std::cout << "Frame passed to queue " << new_cap.size << "\n";
+      }
     } catch (...) {
       std::cerr << "Error: Exception caught.\n";
       break;
     }
   }
-
   cap.release();
 }
+
 } // namespace read
