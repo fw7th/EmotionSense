@@ -11,14 +11,14 @@
 
 #pragma once
 
-#include "frameReader.hpp"
 #include "gpu.h"
 #include "memory"
 #include "net.h"
+#include "reader.hpp"
 #include <algorithm>
 #include <deque>
 #include <iostream>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <queue>
 #include <string>
 #include <vector>

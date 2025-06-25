@@ -1,5 +1,7 @@
 #include "frameReader.hpp"
 #include <iostream>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 #include <utility>
 
 namespace read {

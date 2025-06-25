@@ -1,9 +1,6 @@
 #pragma once
 
-#ifndef TRACKER_H
-#define TRACKER_H
-
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <queue>
 #include <string>
 #include <variant>
@@ -22,5 +19,3 @@ public:
 };
 
 } // namespace read
-
-#endif

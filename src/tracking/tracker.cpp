@@ -1,9 +1,9 @@
 #include "tracker.h"
-// #include "BYTETracker.h"
 #include "UltraFace.hpp"
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <opencv2/highgui.hpp>
 #include <thread>
 #include <utility>
 

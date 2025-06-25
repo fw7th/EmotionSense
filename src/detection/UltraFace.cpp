@@ -12,6 +12,7 @@
 #include "mat.h"
 #include <chrono>
 #include <iostream>
+#include <opencv2/imgproc.hpp>
 #include <thread>
 #include <utility>
 
