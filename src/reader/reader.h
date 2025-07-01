@@ -1,7 +1,7 @@
 #pragma once
 
+#include "customqueue.h"
 #include <opencv2/core.hpp>
-#include <queue>
 #include <string>
 #include <variant>
 
@@ -11,10 +11,11 @@ private:
   std::variant<int, std::string> source;
 
 public:
+  Reader(ts::TSQueue<cv::Mat> &output_queue_);
+  ts::TSQueue<cv::Mat> &output_queue;
+
   // Configuration method
   void setSource(std::variant<int, std::string> s);
-  std::queue<cv::Mat> reader_queue;
-
   void read_frames();
 };
 

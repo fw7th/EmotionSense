@@ -4,7 +4,7 @@ project(EmotionSense)
 # Build settings
 set(CMAKE_CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_STANDARD 17)
 
 # Set default build type
@@ -15,7 +15,7 @@ endif()
 
 # External dependencies
 add_subdirectory(3rdparty/ncnn ncnn_build)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui imgcodecs videoio)
+find_package(OpenCV REQUIRED)
 find_package(OpenMP)
 
 # Debug output

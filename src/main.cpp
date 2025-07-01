@@ -4,20 +4,21 @@
 #include <thread>
 #include <variant>
 
-#include "UltraFace.hpp"
-#include "frameReader.hpp"
+#include "customqueue.h"
+#include "reader.h"
 #include "tracker.h"
+#include "ultraface.h"
 
 int main() {
   std::string input;
-  std::string bin_path = "../data/version-RFB/RFB-320.bin";
-  std::string param_path = "../data/version-RFB/RFB-320.param";
+  std::string bin_path = "../../data/version-RFB/RFB-320.bin";
+  std::string param_path = "../../data/version-RFB/RFB-320.param";
   std::cout << "Enter input source: ";
   std::cin >> input;
 
   std::variant<int, std::string> source;
 
-  // Load bin and weights
+  // Load bin and param files
   std::ifstream bin_file(bin_path, std::ios::binary);
   if (!bin_file) {
     std::cerr << "Can't open bin file\n";
@@ -37,15 +38,19 @@ int main() {
     source = input;
   }
 
-  read::Reader shared_obj1;
-  shared_obj1.setSource(source);
+  ts::TSQueue<cv::Mat> reader_queue;
+  ts::TSQueue<std::unique_ptr<UltraStruct>> detect_queue;
 
-  UltraFace ultraface(shared_obj1, bin_path, param_path, 320, 240, 1,
+  read::Reader reader(reader_queue);
+  reader.setSource(source);
+
+  UltraFace ultraface(reader_queue, detect_queue, bin_path, param_path, 320,
+                      240, 1,
                       0.7); // config model input
 
-  Tracker tracks(&ultraface);
+  Tracker tracks(detect_queue);
 
-  std::thread t1([&]() { shared_obj1.read_frames(); });
+  std::thread t1([&]() { reader.read_frames(); });
   std::thread t2([&]() { ultraface.infer(); });
   std::thread t3([&]() { tracks.track(); });
 
