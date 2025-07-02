@@ -2,10 +2,10 @@ import tensorflow as tf
 import numpy as np
 import cv2 as cv
 
-model_path = "/home/fw7th/emotions/chosen.keras"
+model_path = "/path/to/model.keras"
 model = tf.keras.models.load_model(model_path)
 
-image_path = "/home/fw7th/Pictures/7th.jpeg"  # Replace with your image path
+image_path = "/path/to/image.jpeg"  # Replace with your image path
 img = tf.keras.utils.load_img(image_path, target_size=(80, 80))
 img_array = tf.keras.utils.img_to_array(img)
 img_array = tf.expand_dims(img_array, 0)  # Batch dimension

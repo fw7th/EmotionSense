@@ -5,29 +5,47 @@
 #include <variant>
 
 #include "customqueue.h"
+#include "emo.h"
 #include "reader.h"
 #include "tracker.h"
 #include "ultraface.h"
 
 int main() {
   std::string input;
-  std::string bin_path = "../../data/version-RFB/RFB-320.bin";
-  std::string param_path = "../../data/version-RFB/RFB-320.param";
+
+  std::string bin_ultra = "../../data/version-slim/slim_320.bin";
+  std::string param_ultra = "../../data/version-slim/slim_320.param";
+
+  std::string bin_emo = "../../data/emotion/chosen.bin";
+  std::string param_emo = "../../data/emotion/chosen.param";
+
   std::cout << "Enter input source: ";
   std::cin >> input;
 
   std::variant<int, std::string> source;
 
   // Load bin and param files
-  std::ifstream bin_file(bin_path, std::ios::binary);
-  if (!bin_file) {
-    std::cerr << "Can't open bin file\n";
+  std::ifstream ultra_bin_file(bin_ultra, std::ios::binary);
+  std::ifstream emote_bin_file(bin_emo, std::ios::binary);
+  if (!ultra_bin_file) {
+    std::cerr << "Can't open ultra bin file\n";
     return 1;
   }
 
-  std::ifstream param_file(param_path);
-  if (!param_file) {
-    std::cerr << "Can't open param file\n";
+  if (!emote_bin_file) {
+    std::cerr << "Can't open emote bin file\n";
+    return 1;
+  }
+
+  std::ifstream ultra_param_file(param_ultra);
+  std::ifstream emote_param_file(param_emo);
+  if (!ultra_param_file) {
+    std::cerr << "Can't open ultra param file\n";
+    return 1;
+  }
+
+  if (!emote_param_file) {
+    std::cerr << "Can't open emote param file\n";
     return 1;
   }
 
@@ -40,22 +58,34 @@ int main() {
 
   ts::TSQueue<cv::Mat> reader_queue;
   ts::TSQueue<std::unique_ptr<UltraStruct>> detect_queue;
+  ts::TSQueue<std::unique_ptr<UltraStruct>> tracker_queue;
 
   read::Reader reader(reader_queue);
   reader.setSource(source);
 
-  UltraFace ultraface(reader_queue, detect_queue, bin_path, param_path, 320,
+  UltraFace ultraface(reader_queue, detect_queue, bin_ultra, param_ultra, 320,
                       240, 1,
                       0.7); // config model input
 
-  Tracker tracks(detect_queue);
+  Tracker tracks(detect_queue, tracker_queue);
+
+  Emotion emote(tracker_queue, bin_emo, param_emo);
 
   std::thread t1([&]() { reader.read_frames(); });
   std::thread t2([&]() { ultraface.infer(); });
-  std::thread t3([&]() { tracks.track(); });
+  std::thread t3([&]() { ultraface.infer(); });
+  std::thread t4([&]() { ultraface.infer(); });
+  std::thread t5([&]() { ultraface.infer(); });
+  std::thread t6([&]() { tracks.track(); });
+  std::thread t7([&]() { emote.infer(); });
 
   t1.join();
   t2.join();
   t3.join();
+  t4.join();
+  t5.join();
+  t6.join();
+  t7.join();
+
   return 0;
 }

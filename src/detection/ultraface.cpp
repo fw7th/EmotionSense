@@ -12,6 +12,7 @@
 #include "funcs.h"
 #include "mat.h"
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <thread>
@@ -75,98 +76,130 @@ UltraFace::UltraFace(ts::TSQueue<cv::Mat> &input_queue_,
 UltraFace::~UltraFace() { ultraface.clear(); }
 
 void UltraFace::infer() {
-  int print_count = 0;
+  int frame_count = 0;
+  auto fps_timer_start = std::chrono::steady_clock::now();
+
+  // Pre-allocate reusable containers
+  std::vector<FaceInfo> face_info;
+  face_info.reserve(10); // Reserve space for typical number of faces
+
   while (true) {
-    if (!input_queue.empty()) {
-      if (auto opt_frame = std::move(input_queue.pop());
-          opt_frame.has_value()) {
-        cv::Mat frame = opt_frame.value();
+    auto loop_start = std::chrono::steady_clock::now();
 
-        if (print_count % 15 == 0) {
-          print_type(opt_frame);
-          print_type(frame);
-        }
-
-        cv::Mat frame_copy = frame.clone();
-        cv::Mat crop;
-
-        if (print_count % 20 == 0)
-          std::cout << "Frame queue accessed.\n";
-
-        int height = frame.rows;
-
-        if (print_count % 20 == 0)
-          std::cout << "Frame from reader: " << height << "\n";
-
-        if (frame.channels() != 3) {
-          std::cerr << "Unexpected number of channels: " << frame.channels()
-                    << "\n";
-          continue;
-        }
-
-        if (!frame.empty()) {
-          if (print_count % 20 == 0)
-            std::cout << "gotten frame\n";
-
-          ncnn::Mat inmat = ncnn::Mat::from_pixels(
-              frame.data, ncnn::Mat::PIXEL_BGR2RGB, frame.cols, frame.rows);
-
-          std::vector<FaceInfo> face_info;
-          std::unique_ptr<UltraStruct> obj_ptr =
-              std::make_unique<UltraStruct>();
-
-          detect(inmat, face_info);
-
-          if (face_info.empty()) {
-            std::cout << "No faces detected\n";
-            continue;
-          }
-
-          std::cout << "Just before the loop" << std::endl;
-          for (int i = 0; i < face_info.size(); i++) {
-            if (print_count % 20 == 0)
-              std::cout << "reached here\n";
-
-            auto face = face_info[i];
-            cv::Point pt1(face.x1, face.y1);
-            cv::Point pt2(face.x2, face.y2);
-
-            if (print_count % 20 == 0) {
-              std::cout << "x1 = " << face.x1 << " x2 = " << face.x2 << "\n";
-              std::cout << "y1 = " << face.y1 << " y2 = " << face.y2 << "\n";
-            }
-
-            crop = roiCrop(face.x1, face.y1, face.x2, face.y2, frame_copy);
-
-            obj_ptr->crops.emplace_back(crop);
-            cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 1);
-
-            int height = frame.rows;
-            if (print_count % 20 == 0)
-              std::cout << "Detected_Frame: " << height << "\n";
-          }
-
-          obj_ptr->frame = std::move(frame);
-
-          output_queue.push(std::move(obj_ptr));
-
-        } else {
-          if (print_count % 20 == 0)
-            std::cout << "Frame is empty. \n";
-        }
-      } else {
-        std::cerr << "Error: opt_frame is empty" << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
-        continue;
-      }
-
-    } else {
+    // Check queue and get frame
+    if (input_queue.empty()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(2));
-      if (print_count % 15 == 0)
-        std::cout << "frame queue empty\n";
+      continue;
     }
 
-    print_count++;
+    auto opt_frame = std::move(input_queue.pop());
+    if (!opt_frame.has_value()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(2));
+      continue;
+    }
+
+    cv::Mat &frame = opt_frame.value();
+
+    // Validate frame
+    if (frame.empty() || frame.channels() != 3) {
+      if (frame.channels() != 3) {
+        std::cerr << "Unexpected number of channels: " << frame.channels()
+                  << "\n";
+      }
+      continue;
+    }
+
+    // Time frame cloning
+    auto copy_start = std::chrono::steady_clock::now();
+    cv::Mat frame_copy = frame.clone();
+    auto copy_end = std::chrono::steady_clock::now();
+    auto copy_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        copy_end - copy_start);
+
+    // Convert to ncnn format
+    ncnn::Mat inmat = ncnn::Mat::from_pixels(
+        frame.data, ncnn::Mat::PIXEL_BGR2RGB, frame.cols, frame.rows);
+
+    // Clear and prepare containers
+    face_info.clear();
+    auto obj_ptr = std::make_unique<UltraStruct>();
+
+    // Time face detection
+    auto detect_start = std::chrono::steady_clock::now();
+    detect(inmat, face_info);
+    auto detect_end = std::chrono::steady_clock::now();
+    auto detect_time =
+        std::chrono::duration_cast<std::chrono::duration<double>>(detect_end -
+                                                                  detect_start);
+
+    if (face_info.empty()) {
+      continue;
+    }
+
+    // Pre-allocate crops vector
+    obj_ptr->crops.reserve(face_info.size());
+
+    // Time ROI processing (all faces together)
+    auto roi_start = std::chrono::steady_clock::now();
+    for (const auto &face :
+         face_info) { // Use const reference, range-based loop
+      cv::Point pt1(static_cast<int>(face.x1), static_cast<int>(face.y1));
+      cv::Point pt2(static_cast<int>(face.x2), static_cast<int>(face.y2));
+
+      cv::Mat crop = roiCrop(face.x1, face.y1, face.x2, face.y2, frame_copy);
+      obj_ptr->crops.emplace_back(std::move(crop)); // Move crop to avoid copy
+      cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 1);
+    }
+    auto roi_end = std::chrono::steady_clock::now();
+    auto roi_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        roi_end - roi_start);
+
+    // Move frame to output object
+    obj_ptr->frame = std::move(frame);
+
+    // Push to output queue
+    output_queue.push(std::move(obj_ptr));
+
+    // Calculate total loop time
+    auto loop_end = std::chrono::steady_clock::now();
+    auto loop_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        loop_end - loop_start);
+
+    // Print detailed timing every 10 frames
+    if (frame_count % 10 == 0) {
+      std::cout << "=== FRAME " << frame_count << " TIMING ===\n";
+      std::cout << "[TIMING] Frame Copy:     " << std::fixed
+                << std::setprecision(2) << copy_time.count() * 1000 << " ms\n";
+      std::cout << "[TIMING] Face Detection: " << std::fixed
+                << std::setprecision(2) << detect_time.count() * 1000
+                << " ms\n";
+      std::cout << "[TIMING] ROI Processing: " << std::fixed
+                << std::setprecision(2) << roi_time.count() * 1000 << " ms\n";
+      std::cout << "[TIMING] Total Loop:     " << std::fixed
+                << std::setprecision(2) << loop_time.count() * 1000 << " ms\n";
+      std::cout << "[TIMING] Faces Detected: " << face_info.size() << "\n";
+      if (!face_info.empty()) {
+        std::cout << "[TIMING] Avg ROI/Face:   " << std::fixed
+                  << std::setprecision(2)
+                  << (roi_time.count() * 1000) / face_info.size() << " ms\n";
+      }
+      std::cout << "================================\n";
+    }
+
+    // FPS calculation
+    frame_count++;
+    auto fps_timer_end = std::chrono::steady_clock::now();
+    auto elapsed_seconds =
+        std::chrono::duration_cast<std::chrono::duration<double>>(
+            fps_timer_end - fps_timer_start);
+
+    if (elapsed_seconds.count() >= 1.0) {
+      double fps = frame_count / elapsed_seconds.count();
+      std::cout << "[DEBUG] Face Detector FPS = " << std::fixed
+                << std::setprecision(1) << fps << "\n";
+      frame_count = 0;
+      fps_timer_start = fps_timer_end;
+    }
   }
 }
 
@@ -177,9 +210,11 @@ cv::Mat UltraFace::roiCrop(float x1, float y1, float x2, float y2,
   cv::Rect roi(x1 - 20, y1 - 20, width, height);
   cv::Mat cropped = frame(roi);
 
+  /*
   std::cout << "Cropped size: " << cropped.cols << "x" << cropped.rows
             << std::endl;
   std::cout << "Cropped empty? " << cropped.empty() << std::endl;
+  */
 
   if (cropped.empty()) {
 

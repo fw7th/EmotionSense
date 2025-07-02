@@ -38,6 +38,7 @@ void Reader::read_frames() {
   auto start = std::chrono::steady_clock::now();
 
   while (cap.isOpened()) {
+    auto time1 = std::chrono::steady_clock::now();
     cv::Mat capture;
     cap >> capture;
 
@@ -48,11 +49,15 @@ void Reader::read_frames() {
     cv::resize(capture, new_cap, cv::Size(320, 240));
 
     try {
-      output_queue.push(new_cap);
+      if (frame_count % 3 == 0) {
+        output_queue.push(std::move(new_cap));
+      }
 
-      if (frame_count % 20 == 0) {
+      /*
+      if (frame_count % 50 == 0) {
         std::cout << "Frame passed to queue " << new_cap.size << "\n";
       }
+      */
     } catch (...) {
       std::cerr << "Error: Exception caught.\n";
       break;
@@ -61,15 +66,28 @@ void Reader::read_frames() {
     frame_count++;
     auto end = std::chrono::steady_clock::now();
 
-    int elasped_secs =
-        std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    std::chrono::duration<double> elasped_seconds = end - start;
+    auto duration_secs =
+        std::chrono::duration_cast<std::chrono::seconds>(elasped_seconds);
 
-    if (elasped_secs == 5) {
-      float fps = frame_count / elasped_secs;
-      std::cout << "Frame Reader FPS = " << fps << "\n";
+    int secs = static_cast<int>(duration_secs.count());
+
+    if (secs >= 1) {
+      float fps = frame_count / 1.0;
+      // std::cout << "[DEBUG] Frame Reader FPS = " << fps << "\n";
+
       frame_count = 0;
-      start = std::chrono::steady_clock::now();
+      start = end;
     }
+    auto time2 = std::chrono::steady_clock::now();
+    auto timed = std::chrono::duration_cast<std::chrono::duration<double>>(
+        time2 - time1);
+
+    /*
+    if (frame_count % 200 == 0) {
+      std::cout << "[TIMING] Reader Loop = " << timed.count() << "secs. \n";
+    }
+    */
   }
   cap.release();
 }

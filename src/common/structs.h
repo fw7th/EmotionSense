@@ -6,5 +6,6 @@
 typedef struct UltraStruct {
   cv::Mat frame;
   std::vector<cv::Mat> crops;
+  int emotion_index;
 
 } UltraStruct;

@@ -2,10 +2,10 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
-model = torch.load("/home/fw7th/emotions/models/face.pt")
+model = torch.load("/path/to/model.pt")
 model.eval()
 
-image_path = "/home/fw7th/Pictures/me.jpg"
+image_path = "/path/to/image.jpg"
 img = Image.open(image_path)
 
 transform = transforms.Compose(

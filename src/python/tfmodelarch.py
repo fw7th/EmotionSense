@@ -52,10 +52,10 @@ parameters = {
     "momentum": 0.9,
 }
 model = create_model(architecture=ResNet50, parameters=parameters)
-model.load_weights("/home/fw7th/emotions/models/resnet.h5")
+model.load_weights("/path/to/model.h5")
 model.summary()
 
-model.save("chosen.keras")
+# model.save("/path/to/model/save.keras")
 
 print("Inputs:")
 for i in model.inputs:
@@ -65,4 +65,4 @@ print("Outputs:")
 for o in model.outputs:
     print(f"  Shape: {o.shape}, Dtype: {o.dtype}")
 
-# plot_model(model, to_file="model.png", show_shapes=True, show_layer_names=True)
+plot_model(model, to_file="model.png", show_shapes=True, show_layer_names=True)

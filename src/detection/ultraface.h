@@ -15,6 +15,7 @@
 #include "gpu.h"
 #include "net.h"
 #include "structs.h"
+
 #include <algorithm>
 #include <memory>
 #include <opencv2/core.hpp>
@@ -52,17 +53,17 @@ public:
 
   const std::string &bin_path;
   const std::string &param_path;
-  int detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list);
+
+  ts::TSQueue<cv::Mat> &input_queue; // queue to recieve detections
+  ts::TSQueue<std::unique_ptr<UltraStruct>> &output_queue;
 
   cv::Mat roiCrop(float x1, float y1, float x2, float y2, cv::Mat &frame);
 
   void infer();
 
-  ts::TSQueue<cv::Mat> &input_queue; // queue to recieve detections
-
-  ts::TSQueue<std::unique_ptr<UltraStruct>> &output_queue;
-
 private:
+  int detect(ncnn::Mat &img, std::vector<FaceInfo> &face_list);
+
   void generateBBox(std::vector<FaceInfo> &bbox_collection, ncnn::Mat scores,
                     ncnn::Mat boxes, float score_threshold, int num_anchors);
 

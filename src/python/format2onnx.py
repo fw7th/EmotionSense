@@ -5,16 +5,16 @@ import onnx
 import torch
 
 """
-    .h5 -> onnx
+    .keras -> onnx
 """
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-mobile_h5 = os.path.join(base_path, "models", "mobilenet_7.h5")
-onnx_h5 = os.path.join(base_path, "models", "mobilenet_7.onnx")
+chosen = os.path.join(base_path, "models", "chosen.keras")
+onnx_h5 = os.path.join(base_path, "models", "chosen.onnx")
 
 
-model = tf.keras.models.load_model(mobile_h5)
+model = tf.keras.models.load_model(chosen)
 
 spec = tuple(tf.TensorSpec((None, *inp.shape[1:]), inp.dtype) for inp in model.inputs)
 mobile_onnx, _ = tf2onnx.convert.from_keras(model, input_signature=spec, opset=13)

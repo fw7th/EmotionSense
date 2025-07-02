@@ -2,7 +2,7 @@ import torch
 from torchviz import make_dot
 from torchsummary import summary
 
-model = torch.load("/home/fw7th/emotions/models/face.pt")
+model = torch.load("/path/to/model.pt")
 
 print(model.default_cfg)
 print(model)
